@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getCampaigns,
   getCampaign,
@@ -9,10 +9,15 @@ import {
   sendCampaign,
 } from '../api/campaigns';
 
-export function useCampaigns(page: number = 1) {
-  return useQuery({
-    queryKey: ['campaigns', page],
-    queryFn: () => getCampaigns(page),
+export function useCampaigns() {
+  return useInfiniteQuery({
+    queryKey: ['campaigns'],
+    queryFn: ({ pageParam }) => getCampaigns(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const { page, totalPages } = lastPage.pagination;
+      return page < totalPages ? page + 1 : undefined;
+    },
   });
 }
 

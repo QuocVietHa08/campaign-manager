@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useCampaigns, useDeleteCampaign } from '../hooks/useCampaigns';
 import { CampaignCard } from '../components/campaigns/CampaignCard';
+import { ErrorFallback } from '../components/layout/ErrorFallback';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
 import {
@@ -13,13 +14,37 @@ import {
   DialogFooter,
 } from '../components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Megaphone } from 'lucide-react';
+import { Plus, Megaphone, Loader2 } from 'lucide-react';
 
 export function CampaignListPage() {
-  const [page, setPage] = useState(1);
-  const { data, isLoading, isError, error } = useCampaigns(page);
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useCampaigns();
   const deleteMutation = useDeleteCampaign();
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+
+  // Infinite scroll sentinel
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const handleIntersect = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [fetchNextPage, hasNextPage, isFetchingNextPage]
+  );
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(handleIntersect, {
+      rootMargin: '200px',
+    });
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [handleIntersect]);
 
   const handleDelete = () => {
     if (!deleteTarget) return;
@@ -37,13 +62,15 @@ export function CampaignListPage() {
 
   if (isError) {
     return (
-      <div className="animate-fade-in py-16 text-center">
-        <p className="text-destructive">
-          Failed to load campaigns: {(error as any)?.message || 'Unknown error'}
-        </p>
-      </div>
+      <ErrorFallback
+        title="Failed to load campaigns"
+        message="Could not connect to the server. Please check your connection and try again."
+        onRetry={() => refetch()}
+      />
     );
   }
+
+  const allCampaigns = data?.pages.flatMap((page) => page.campaigns) ?? [];
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -68,7 +95,7 @@ export function CampaignListPage() {
             </div>
           ))}
         </div>
-      ) : !data || data.campaigns.length === 0 ? (
+      ) : allCampaigns.length === 0 ? (
         <div className="animate-fade-in-up py-20 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
             <Megaphone className="h-8 w-8 text-muted-foreground" />
@@ -87,11 +114,11 @@ export function CampaignListPage() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {data.campaigns.map((campaign, i) => (
+            {allCampaigns.map((campaign, i) => (
               <div
                 key={campaign.id}
                 className="animate-fade-in-up"
-                style={{ animationDelay: `${i * 50}ms` }}
+                style={{ animationDelay: `${(i % 10) * 50}ms` }}
               >
                 <CampaignCard
                   campaign={campaign}
@@ -101,29 +128,15 @@ export function CampaignListPage() {
             ))}
           </div>
 
-          {data.pagination.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() => setPage(page - 1)}
-              >
-                Previous
-              </Button>
-              <span className="min-w-[80px] text-center text-sm text-muted-foreground">
-                Page {page} of {data.pagination.totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === data.pagination.totalPages}
-                onClick={() => setPage(page + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          )}
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="flex justify-center py-4">
+            {isFetchingNextPage && (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            )}
+            {!hasNextPage && allCampaigns.length > 10 && (
+              <p className="text-sm text-muted-foreground">You've reached the end</p>
+            )}
+          </div>
         </>
       )}
 

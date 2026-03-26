@@ -6,7 +6,7 @@ import { Label } from '../ui/label';
 import { Skeleton } from '../ui/skeleton';
 import { useRecipients } from '../../hooks/useRecipients';
 import type { Recipient } from '../../types';
-import { Users, Check } from 'lucide-react';
+import { Users, Check, AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface CampaignFormData {
   name: string;
@@ -18,15 +18,29 @@ interface CampaignFormData {
 interface CampaignFormProps {
   onSubmit: (data: CampaignFormData) => void;
   isLoading?: boolean;
+  initialValues?: Partial<CampaignFormData>;
+  submitLabel?: string;
 }
 
-export function CampaignForm({ onSubmit, isLoading }: CampaignFormProps) {
-  const [name, setName] = useState('');
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
-  const [selectedRecipients, setSelectedRecipients] = useState<number[]>([]);
+export function CampaignForm({
+  onSubmit,
+  isLoading,
+  initialValues,
+  submitLabel = 'Create Campaign',
+}: CampaignFormProps) {
+  const [name, setName] = useState(initialValues?.name ?? '');
+  const [subject, setSubject] = useState(initialValues?.subject ?? '');
+  const [body, setBody] = useState(initialValues?.body ?? '');
+  const [selectedRecipients, setSelectedRecipients] = useState<number[]>(
+    initialValues?.recipientIds ?? []
+  );
 
-  const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();
+  const {
+    data: recipients = [],
+    isLoading: recipientsLoading,
+    isError: recipientsError,
+    refetch: refetchRecipients,
+  } = useRecipients();
 
   const toggleRecipient = (id: number) => {
     setSelectedRecipients((prev) =>
@@ -102,7 +116,22 @@ export function CampaignForm({ onSubmit, isLoading }: CampaignFormProps) {
             </Button>
           )}
         </div>
-        {recipientsLoading ? (
+        {recipientsError ? (
+          <div className="flex flex-col items-center py-6 text-center">
+            <AlertTriangle className="mb-2 h-6 w-6 text-destructive" />
+            <p className="text-sm text-muted-foreground">Failed to load recipients</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => refetchRecipients()}
+            >
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+              Retry
+            </Button>
+          </div>
+        ) : recipientsLoading ? (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-14 w-full" />
@@ -152,7 +181,7 @@ export function CampaignForm({ onSubmit, isLoading }: CampaignFormProps) {
       </div>
 
       <Button type="submit" disabled={isLoading} className="w-full" size="lg">
-        {isLoading ? 'Creating...' : 'Create Campaign'}
+        {isLoading ? 'Saving...' : submitLabel}
       </Button>
     </form>
   );

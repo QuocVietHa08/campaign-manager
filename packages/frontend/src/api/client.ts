@@ -15,11 +15,13 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor: handle 401 -> logout
+// Response interceptor: handle 401 -> logout (skip for auth endpoints)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url || '';
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register');
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       useAuthStore.getState().logout();
       window.location.href = '/login';
     }

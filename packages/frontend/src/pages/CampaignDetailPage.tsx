@@ -9,6 +9,7 @@ import {
 import { StatusBadge } from '../components/campaigns/StatusBadge';
 import { StatsDisplay } from '../components/campaigns/StatsDisplay';
 import { RecipientTable } from '../components/campaigns/RecipientTable';
+import { ErrorFallback } from '../components/layout/ErrorFallback';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Skeleton } from '../components/ui/skeleton';
@@ -21,12 +22,12 @@ import {
   DialogFooter,
 } from '../components/ui/dialog';
 import { toast } from 'sonner';
-import { Calendar, Send, Trash2, ArrowLeft, Clock, User } from 'lucide-react';
+import { Calendar, Send, Trash2, ArrowLeft, Clock, User, Pencil } from 'lucide-react';
 
 export function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: campaign, isLoading, isError } = useCampaign(Number(id));
+  const { data: campaign, isLoading, isError, refetch } = useCampaign(Number(id));
 
   const deleteMutation = useDeleteCampaign();
   const scheduleMutation = useScheduleCampaign();
@@ -53,12 +54,13 @@ export function CampaignDetailPage() {
 
   if (isError || !campaign) {
     return (
-      <div className="animate-fade-in py-20 text-center">
-        <p className="text-muted-foreground">Campaign not found</p>
-        <Button variant="outline" onClick={() => navigate('/campaigns')} className="mt-4">
-          Back to Campaigns
-        </Button>
-      </div>
+      <ErrorFallback
+        title="Campaign not found"
+        message="The campaign could not be loaded. It may have been deleted or the server is unavailable."
+        onRetry={() => refetch()}
+        onBack={() => navigate('/campaigns')}
+        backLabel="Back to Campaigns"
+      />
     );
   }
 
@@ -128,6 +130,14 @@ export function CampaignDetailPage() {
         <div className="flex flex-wrap gap-2">
           {campaign.status === 'draft' && (
             <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/campaigns/${campaign.id}/edit`)}
+              >
+                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                Edit
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setShowScheduleDialog(true)}>
                 <Calendar className="mr-1.5 h-3.5 w-3.5" />
                 Schedule

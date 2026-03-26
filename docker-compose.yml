@@ -46,6 +46,9 @@ services:
       VITE_API_URL: http://localhost:3001
     depends_on:
       - backend
+    volumes:
+      - ./packages/frontend/src:/app/packages/frontend/src
+      - ./packages/frontend/index.html:/app/packages/frontend/index.html
 
 volumes:
   pgdata:

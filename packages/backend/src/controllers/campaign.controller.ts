@@ -72,3 +72,13 @@ export async function sendCampaign(req: Request, res: Response, next: NextFuncti
     next(err);
   }
 }
+
+export async function getCampaignStats(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = parseInt(req.params.id as string);
+    const stats = await campaignService.getCampaignStats(id);
+    return res.json(stats);
+  } catch (err) {
+    next(err);
+  }
+}

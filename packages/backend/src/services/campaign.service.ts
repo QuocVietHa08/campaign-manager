@@ -169,3 +169,16 @@ export async function scheduleCampaign(id: number, scheduledAt: string) {
 
   return campaign.reload();
 }
+
+export async function getCampaignStats(id: number) {
+  const campaign = await Campaign.findByPk(id);
+  if (!campaign) {
+    throw new NotFoundError('Campaign not found');
+  }
+
+  const campaignRecipients = await CampaignRecipient.findAll({
+    where: { campaignId: id },
+  });
+
+  return computeStats(campaignRecipients);
+}
