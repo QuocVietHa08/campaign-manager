@@ -1,0 +1,47 @@
+{
+  "name": "campaign-manager",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "yarn workspace @campaign-manager/backend dev",
+    "dev:frontend": "yarn workspace @campaign-manager/frontend dev",
+    "dev": "concurrently \"yarn dev:backend\" \"yarn dev:frontend\"",
+    "build": "yarn workspaces run build",
+    "test": "yarn workspace @campaign-manager/backend test",
+    "db:migrate": "yarn workspace @campaign-manager/backend db:migrate",
+    "db:seed": "yarn workspace @campaign-manager/backend db:seed",
+    "db:migrate:undo": "yarn workspace @campaign-manager/backend db:migrate:undo",
+    "lint": "eslint \"packages/**/*.{ts,tsx}\" --fix",
+    "format": "prettier --write \"packages/**/*.{ts,tsx,js,json,css}\"",
+    "format:check": "prettier --check \"packages/**/*.{ts,tsx,js,json,css}\"",
+    "typecheck": "./scripts/typecheck.sh",
+    "setup": "./scripts/setup.sh",
+    "docker:start": "./scripts/docker-start.sh",
+    "docker:stop": "./scripts/docker-stop.sh",
+    "docker:build": "./scripts/docker-start.sh --build",
+    "db:reset": "./scripts/db-reset.sh",
+    "test:watch": "NODE_ENV=test yarn workspace @campaign-manager/backend test -- --watch",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prettier": "^3.4.0",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "packages/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "packages/**/*.{js,json,css,md}": [
+      "prettier --write"
+    ]
+  }
+}
